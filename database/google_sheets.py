@@ -14,12 +14,16 @@ SCOPES = [
 # =========================================================
 
 @st.cache_resource
-
 def conectar():
     # Verifica se os segredos estão configurados no Streamlit Cloud
     if "gspread_credentials" in st.secrets:
         # Lê direto do painel de Secrets da nuvem
         creds_dict = dict(st.secrets["gspread_credentials"])
+        
+        # Garante que as quebras de linha da private_key sejam interpretadas corretamente
+        if "private_key" in creds_dict:
+            creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
+            
         credentials = Credentials.from_service_account_info(
             creds_dict,
             scopes=SCOPES
