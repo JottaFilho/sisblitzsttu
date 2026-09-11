@@ -1,6 +1,3 @@
-Webapp - Cadastro de Blitz/
-│
-├── .gitignore
-├── app.py
-├── credenciais.json
-└── .venv/
+venv/
+.venv/
+credenciais.json
