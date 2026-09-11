@@ -458,9 +458,15 @@ if opcao == "📊 Dashboard":
                     })
                 df_pdf = pd.DataFrame(tabela_pdf_dados)
 
-                img_periodo_bytes = fig_periodo.to_image(format="png", width=700, height=300, scale=2)
-                img_veiculos_bytes = fig_veiculos.to_image(format="png", width=600, height=250, scale=2)
-                img_local_bytes = fig_local.to_image(format="png", width=700, height=350, scale=2)
+                # Tenta exportar os gráficos como imagem; se o Kaleido falhar na nuvem, passa None para o PDF não quebrar
+                try:
+                    img_periodo_bytes = fig_periodo.to_image(format="png", width=700, height=300, scale=2)
+                    img_veiculos_bytes = fig_veiculos.to_image(format="png", width=600, height=250, scale=2)
+                    img_local_bytes = fig_local.to_image(format="png", width=700, height=350, scale=2)
+                except Exception:
+                    img_periodo_bytes = None
+                    img_veiculos_bytes = None
+                    img_local_bytes = None
 
                 pdf_bytes = gerar_pdf_relatorio(
                     metricas_dict,
@@ -471,9 +477,9 @@ if opcao == "📊 Dashboard":
                 )
 
                 st.download_button(
-                    label="📄 Baixar Relatório Completo com Gráficos (PDF)",
+                    label="📄 Baixar Relatório Gerencial (PDF)",
                     data=pdf_bytes,
-                    file_name="relatorio_gerencial_graficos_seat_sttu.pdf",
+                    file_name="relatorio_gerencial_seat_sttu.pdf",
                     mime="application/pdf",
                     use_container_width=True
                 )
