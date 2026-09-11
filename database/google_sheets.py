@@ -9,29 +9,44 @@ SCOPES = [
 
 @st.cache_resource
 def conectar():
+    creds_dict = None
+
+    # Opção 1: Tenta ler o JSON completo colado como string
     if "GOOGLE_CREDENTIALS_JSON" in st.secrets:
-        # Lê o JSON completo passado como string no secrets
-        cred_str = st.secrets["GOOGLE_CREDENTIALS_JSON"]
-        creds_dict = json.loads(cred_str)
-        
-        credentials = Credentials.from_service_account_info(
-            creds_dict,
-            scopes=SCOPES
-        )
+        try:
+            raw_val = st.secrets["GOOGLE_CREDENTIALS_JSON"]
+            creds_dict = json.loads(raw_val)
+        except Exception as e:
+            st.error(f"Erro ao converter GOOGLE_CREDENTIALS_JSON para JSON: {e}")
+
+    # Opção 2: Tenta ler a estrutura padrão de sub-chaves do st.secrets
     elif "gspread_credentials" in st.secrets:
-        # Mantém compatibilidade caso ainda use a estrutura antiga
         creds_dict = dict(st.secrets["gspread_credentials"])
+
+    # Se conseguiu carregar os dados de alguma das formas acima via Secrets:
+    if creds_dict:
         if "private_key" in creds_dict:
-            creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
+            pk = creds_dict["private_key"]
+            # Normaliza a chave privada para garantir quebras de linha corretas
+            pk = pk.replace("\\n", "\n").strip('"').strip("'")
+            creds_dict["private_key"] = pk
+
         credentials = Credentials.from_service_account_info(
             creds_dict,
             scopes=SCOPES
         )
     else:
-        credentials = Credentials.from_service_account_file(
-            "credenciais.json",
-            scopes=SCOPES
-        )
+        # Fallback local apenas para desenvolvimento na sua máquina
+        try:
+            credentials = Credentials.from_service_account_file(
+                "credenciais.json",
+                scopes=SCOPES
+            )
+        except Exception:
+            raise FileNotFoundError(
+                "Nenhum segredo 'GOOGLE_CREDENTIALS_JSON' foi encontrado no Streamlit Cloud "
+                "e o arquivo físico 'credenciais.json' não existe na pasta."
+            )
 
     return gspread.authorize(credentials)
 
