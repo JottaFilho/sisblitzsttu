@@ -1,3 +1,4 @@
+import json
 import gspread
 import streamlit as st
 from google.oauth2.service_account import Credentials
@@ -6,35 +7,22 @@ SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets"
 ]
 
-# =========================================================
-# CONEXÃO
-# =========================================================
-
 @st.cache_resource
 def conectar():
-    if "gspread_credentials" in st.secrets:
-        creds_dict = dict(st.secrets["gspread_credentials"])
+    if "GOOGLE_CREDENTIALS_JSON" in st.secrets:
+        # Lê o JSON completo passado como string no secrets
+        cred_str = st.secrets["GOOGLE_CREDENTIALS_JSON"]
+        creds_dict = json.loads(cred_str)
         
+        credentials = Credentials.from_service_account_info(
+            creds_dict,
+            scopes=SCOPES
+        )
+    elif "gspread_credentials" in st.secrets:
+        # Mantém compatibilidade caso ainda use a estrutura antiga
+        creds_dict = dict(st.secrets["gspread_credentials"])
         if "private_key" in creds_dict:
-            pk = creds_dict["private_key"]
-            # Remove eventuais aspas duplas extras que o Streamlit ou o usuário possam ter colocado
-            pk = pk.strip('"').strip("'")
-            
-            # Se a chave foi colada sem quebras reais ou com \n literal, normaliza para o formato PEM
-            if "-----BEGIN PRIVATE KEY-----" in pk and "-----END PRIVATE KEY-----" in pk:
-                # Se não tem quebras reais, reconstrói o formato correto
-                if "\n" not in pk.replace("\\n", "\n"):
-                    # Remove os headers e footers para limpar o miolo
-                    body = pk.replace("-----BEGIN PRIVATE KEY-----", "").replace("-----END PRIVATE KEY-----", "")
-                    body = "".join(body.split()) # Remove espaços e quebras falsas
-                    # Reorganiza em blocos de 64 caracteres (padrão PEM)
-                    formatted_body = "\n".join(body[i:i+64] for i in range(0, len(body), 64))
-                    pk = f"-----BEGIN PRIVATE KEY-----\n{formatted_body}\n-----END PRIVATE KEY-----\n"
-                else:
-                    pk = pk.replace("\\n", "\n")
-            
-            creds_dict["private_key"] = pk
-
+            creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
         credentials = Credentials.from_service_account_info(
             creds_dict,
             scopes=SCOPES
