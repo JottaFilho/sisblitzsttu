@@ -458,22 +458,13 @@ if opcao == "📊 Dashboard":
                     })
                 df_pdf = pd.DataFrame(tabela_pdf_dados)
 
-                # Tenta exportar os gráficos como imagem; se o Kaleido falhar na nuvem, passa None para o PDF não quebrar
-                try:
-                    img_periodo_bytes = fig_periodo.to_image(format="png", width=700, height=300, scale=2)
-                    img_veiculos_bytes = fig_veiculos.to_image(format="png", width=600, height=250, scale=2)
-                    img_local_bytes = fig_local.to_image(format="png", width=700, height=350, scale=2)
-                except Exception:
-                    img_periodo_bytes = None
-                    img_veiculos_bytes = None
-                    img_local_bytes = None
-
+                # Mantém os gráficos na tela interativos, mas pula a exportação estática em imagem para evitar erros no servidor
                 pdf_bytes = gerar_pdf_relatorio(
                     metricas_dict,
                     df_pdf,
-                    imagem_grafico_periodo=img_periodo_bytes,
-                    imagem_grafico_veiculos=img_veiculos_bytes,
-                    imagem_grafico_local=img_local_bytes
+                    imagem_grafico_periodo=None,
+                    imagem_grafico_veiculos=None,
+                    imagem_grafico_local=None
                 )
 
                 st.download_button(
