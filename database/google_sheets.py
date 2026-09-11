@@ -1,13 +1,10 @@
 import gspread
 import streamlit as st
-
 from google.oauth2.service_account import Credentials
-
 
 SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets"
 ]
-
 
 # =========================================================
 # CONEXÃO
@@ -17,13 +14,17 @@ SCOPES = [
 def conectar():
     # Verifica se os segredos estão configurados no Streamlit Cloud
     if "gspread_credentials" in st.secrets:
-        # Lê direto do painel de Secrets da nuvem
+        # Converte o st.secrets em um dicionário padrão do Python
         creds_dict = dict(st.secrets["gspread_credentials"])
         
-        # Garante que as quebras de linha da private_key sejam interpretadas corretamente
+        # Garante que as quebras de linha da private_key sejam interpretadas como \n reais
         if "private_key" in creds_dict:
-            creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
-            
+            pk = creds_dict["private_key"]
+            # Substitui literais \n e limpa eventuais espaços extras nas pontas
+            pk = pk.replace("\\n", "\n").strip()
+            # Assegura que está em formato de bytes/string limpa
+            creds_dict["private_key"] = pk
+
         credentials = Credentials.from_service_account_info(
             creds_dict,
             scopes=SCOPES
@@ -36,6 +37,8 @@ def conectar():
         )
 
     return gspread.authorize(credentials)
+
+
 
 
 @st.cache_resource
