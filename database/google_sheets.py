@@ -12,17 +12,27 @@ SCOPES = [
 
 @st.cache_resource
 def conectar():
-    # Verifica se os segredos estão configurados no Streamlit Cloud
     if "gspread_credentials" in st.secrets:
-        # Converte o st.secrets em um dicionário padrão do Python
         creds_dict = dict(st.secrets["gspread_credentials"])
         
-        # Garante que as quebras de linha da private_key sejam interpretadas como \n reais
         if "private_key" in creds_dict:
             pk = creds_dict["private_key"]
-            # Substitui literais \n e limpa eventuais espaços extras nas pontas
-            pk = pk.replace("\\n", "\n").strip()
-            # Assegura que está em formato de bytes/string limpa
+            # Remove eventuais aspas duplas extras que o Streamlit ou o usuário possam ter colocado
+            pk = pk.strip('"').strip("'")
+            
+            # Se a chave foi colada sem quebras reais ou com \n literal, normaliza para o formato PEM
+            if "-----BEGIN PRIVATE KEY-----" in pk and "-----END PRIVATE KEY-----" in pk:
+                # Se não tem quebras reais, reconstrói o formato correto
+                if "\n" not in pk.replace("\\n", "\n"):
+                    # Remove os headers e footers para limpar o miolo
+                    body = pk.replace("-----BEGIN PRIVATE KEY-----", "").replace("-----END PRIVATE KEY-----", "")
+                    body = "".join(body.split()) # Remove espaços e quebras falsas
+                    # Reorganiza em blocos de 64 caracteres (padrão PEM)
+                    formatted_body = "\n".join(body[i:i+64] for i in range(0, len(body), 64))
+                    pk = f"-----BEGIN PRIVATE KEY-----\n{formatted_body}\n-----END PRIVATE KEY-----\n"
+                else:
+                    pk = pk.replace("\\n", "\n")
+            
             creds_dict["private_key"] = pk
 
         credentials = Credentials.from_service_account_info(
@@ -30,14 +40,12 @@ def conectar():
             scopes=SCOPES
         )
     else:
-        # Fallback para rodar localmente usando o arquivo físico na sua máquina
         credentials = Credentials.from_service_account_file(
             "credenciais.json",
             scopes=SCOPES
         )
 
     return gspread.authorize(credentials)
-
 
 
 
